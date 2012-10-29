@@ -210,6 +210,10 @@ module Spree
       true
     end
 
+    def awaiting_returns?
+      return_authorizations.any? { |return_authorization| return_authorization.authorized? }
+    end
+    
     def add_variant(variant, quantity = 1)
       current_item = find_line_item_by_variant(variant)
       if current_item
@@ -321,8 +325,17 @@ module Spree
     def finalize!
       touch :completed_at
       InventoryUnit.assign_opening_inventory(self)
+
       # lock all adjustments (coupon promotions, etc.)
       adjustments.each { |adjustment| adjustment.update_column('locked', true) }
+
+      # update payment and shipment(s) states, and save
+      updater = OrderUpdater.new(self)
+      updater.update_payment_state
+      shipments.each { |shipment| shipment.update!(self) }
+      updater.update_shipment_state
+      save
+
       deliver_order_confirmation_email
 
       self.state_changes.create({
@@ -394,9 +407,21 @@ module Spree
       end
     end
 
+    def pending_payments
+      payments.with_state('checkout')
+    end
+
     def process_payments!
       begin
-        payments.each(&:process!)
+        pending_payments.each do |payment|
+          break if payment_total >= total
+
+          payment.process!
+
+          if payment.completed?
+            self.payment_total += payment.amount
+          end
+        end
       rescue Core::GatewayError
         !!Spree::Config[:allow_checkout_on_gateway_error]
       end

@@ -2,7 +2,6 @@ module Spree
   module Admin
     class OrdersController < Spree::Admin::BaseController
       require 'spree/core/gateway_error'
-      before_filter :initialize_txn_partials
       before_filter :initialize_order_events
       before_filter :load_order, :only => [:show, :edit, :update, :fire, :resend]
 
@@ -36,8 +35,7 @@ module Spree
         end
 
         @search = Order.ransack(params[:q])
-        @orders = @search.result(:distinct => true).
-          includes([:user, :shipments, :payments]).
+        @orders = @search.result.includes([:user, :shipments, :payments]).
           page(params[:page]).
           per(params[:per_page] || Spree::Config[:orders_per_page])
 
@@ -92,7 +90,7 @@ module Spree
         # itself will make sure transitions are not applied in the wrong state)
         event = params[:e]
         if @order.send("#{event}")
-          flash.notice = t(:order_updated)
+          flash[:success] = t(:order_updated)
         else
           flash[:error] = t(:cannot_perform_operation)
         end
@@ -104,7 +102,7 @@ module Spree
 
       def resend
         OrderMailer.confirm_email(@order, true).deliver
-        flash.notice = t(:order_email_resent)
+        flash[:success] = t(:order_email_resent)
 
         respond_with(@order) { |format| format.html { redirect_to :back } }
       end
@@ -113,11 +111,6 @@ module Spree
 
         def load_order
           @order = Order.find_by_number!(params[:id], :include => :adjustments) if params[:id]
-        end
-
-        # Allows extensions to add new forms of payment to provide their own display of transactions
-        def initialize_txn_partials
-          @txn_partials = []
         end
 
         # Used for extensions which need to provide their own custom event links on the order details view.

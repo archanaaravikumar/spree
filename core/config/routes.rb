@@ -9,11 +9,19 @@ Spree::Core::Engine.routes.draw do
   resources :tax_categories
 
   resources :states, :only => :index
+  resources :countries, :only => :index
 
   # non-restful checkout stuff
   put '/checkout/update/:state', :to => 'checkout#update', :as => :update_checkout
   get '/checkout/:state', :to => 'checkout#edit', :as => :checkout_state
   get '/checkout', :to => 'checkout#edit' , :as => :checkout
+
+  populate_redirect = redirect do |params, request|
+    request.flash[:error] = I18n.t(:populate_get_error)
+    request.referer || '/cart'
+  end
+
+  get '/orders/populate', :via => :get, :to => populate_redirect
 
   resources :orders do
     post :populate, :on => :collection
@@ -56,7 +64,6 @@ Spree::Core::Engine.routes.draw do
     end
     resources :states
     resources :tax_categories
-    resources :configurations, :only => :index
     resources :products do
       resources :product_properties
       resources :images do
@@ -74,16 +81,12 @@ Spree::Core::Engine.routes.draw do
       end
     end
 
+    get '/variants/search', :to => "variants#search", :as => :search_variants
+
     resources :option_types do
       collection do
         post :update_positions
         post :update_values_positions
-      end
-    end
-
-    resources :properties do
-      collection do
-        get :filtered
       end
     end
 
@@ -143,6 +146,12 @@ Spree::Core::Engine.routes.draw do
       resources :taxons
     end
 
+    resources :taxons, :only => [] do
+      collection do
+        get :search
+      end
+    end
+
     resources :reports, :only => [:index, :show] do
       collection do
         get :sales_total
@@ -167,6 +176,7 @@ Spree::Core::Engine.routes.draw do
 
   match '/admin', :to => 'admin/orders#index', :as => :admin
 
+  match '/unauthorized', :to => 'home#unauthorized', :as => :unauthorized
   match '/content/cvv', :to => 'content#cvv', :as => :cvv
   match '/content/*path', :to => 'content#show', :via => :get, :as => :content
 end

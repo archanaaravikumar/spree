@@ -3,7 +3,18 @@ module CapybaraExt
     save_and_open_page
   end
 
-  # A hack so that we can test select2 things within our integration tests
+  def click_icon(type)
+    find(".icon-#{type}").click
+  end
+
+  def within_row(num, &block)
+    within("table.index tbody tr:nth-child(#{num})", &block)
+  end
+
+  def column_text(num)
+    find("td:nth-child(#{num})").text
+  end
+
   def select2(within, value)
     script = %Q{
       $('#{within} .select2-search-field input').val('#{value}')
@@ -11,8 +22,10 @@ module CapybaraExt
     }
     page.execute_script(script)
 
-    # In separate executions as it needs that break between
-    # Otherwise spec/requests/admin/products/edit/variants_spec breaks
+    # Wait for list to populate...
+    wait_until do
+      page.find(".select2-highlighted").visible?
+    end
     page.execute_script("$('.select2-highlighted').mouseup();")
   end
 end

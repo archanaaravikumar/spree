@@ -7,6 +7,7 @@ When filing an issue on the Spree project, please provide these details:
 * A comprehensive list of steps to reproduce the issue.
 * The version of Spree *and* the version of Rails.
 * A list of all extensions.
+* Any relevant stack traces ("Full trace" preferred)
 
 In 99% of cases, this information is enough to determine the cause and solution to the problem that is being described.
 
@@ -33,7 +34,7 @@ a test!
 
 4. Make the test pass.
 
-5. Push to your fork and submit a pull request.
+5. Push to your fork and submit a pull request. If the changes will apply cleanly to the latest stable branches and master branch, you will only need to submit one pull request.
 
 At this point you're waiting on us. We like to at least comment on, if not
 accept, pull requests within three business days (and, typically, one business

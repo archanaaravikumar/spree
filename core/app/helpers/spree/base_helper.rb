@@ -30,13 +30,13 @@ module Spree
     end
 
     # human readable list of variant options
-    def variant_options(v, allow_back_orders = Spree::Config[:allow_backorders], include_style = true)
+    def variant_options(v, options={})
       list = v.options_text
 
       # We shouldn't show out of stock if the product is infact in stock
       # or when we're not allowing backorders.
-      unless (allow_back_orders || v.in_stock?)
-        list = if include_style
+      unless v.in_stock?
+        list = if options[:include_style]
           content_tag(:span, "(#{t(:out_of_stock)}) #{list}", :class => 'out-of-stock')
         else
           "#{t(:out_of_stock)} #{list}"
@@ -79,7 +79,7 @@ module Spree
     end
 
     def flash_messages(opts = {})
-      opts[:ignore_types] = [:commerce_tracking].concat([opts[:ignore_types]] || [])
+      opts[:ignore_types] = [:commerce_tracking].concat(Array(opts[:ignore_types]) || [])
 
       flash.each do |msg_type, text|
         unless opts[:ignore_types].include?(msg_type)
@@ -101,7 +101,7 @@ module Spree
         crumbs << content_tag(:li, content_tag(:span, t(:products)))
       end
       crumb_list = content_tag(:ul, raw(crumbs.flatten.map{|li| li.mb_chars}.join), :class => 'inline')
-      content_tag(:nav, crumb_list, :id => 'breadcrumbs')
+      content_tag(:nav, crumb_list, :id => 'breadcrumbs', :class => 'sixteen columns')
     end
 
     def taxons_tree(root_taxon, current_taxon, max_level = 1)
@@ -132,12 +132,8 @@ module Spree
       end.sort { |a, b| a.name <=> b.name }
     end
 
-    # generates nested url to product based on supplied taxon
-    def seo_url(taxon, product = nil)
-      return spree.nested_taxons_path(taxon.permalink) if product.nil?
-      warn "DEPRECATION: the /t/taxon-permalink/p/product-permalink urls are "+
-        "not used anymore. Use product_url instead. (called from #{caller[0]})"
-      return product_url(product)
+    def seo_url(taxon)
+      return spree.nested_taxons_path(taxon.permalink)
     end
 
     def gem_available?(name)
@@ -150,6 +146,11 @@ module Spree
 
     def money(amount)
       Spree::Money.new(amount)
+    end
+
+    def pretty_time(time)
+      [I18n.l(time.to_date, :format => :long),
+        time.strftime("%H:%m %p")].join(" ")
     end
 
     def method_missing(method_name, *args, &block)

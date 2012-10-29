@@ -28,6 +28,22 @@ describe Spree::Variant do
     variant.run_callbacks(:save)
   end
 
+  it "lock_version should prevent stale updates" do
+    copy = Spree::Variant.find(variant.id)
+
+    copy.count_on_hand = 200
+    copy.save!
+
+    variant.count_on_hand = 100
+    expect { variant.save }.to raise_error ActiveRecord::StaleObjectError
+
+    variant.reload.count_on_hand.should == 200
+    variant.count_on_hand = 100
+    variant.save
+
+    variant.reload.count_on_hand.should == 100
+  end
+
   context "on_hand=" do
     before { variant.stub(:inventory_units => mock('inventory-units')) }
 
@@ -82,7 +98,7 @@ describe Spree::Variant do
 
       end
 
-      context "and count is decreased" do
+      context "and count is negative" do
         before { variant.inventory_units.stub(:with_state).and_return([]) }
 
         it "should change count_on_hand to given value" do
@@ -218,6 +234,14 @@ describe Spree::Variant do
           variant.price.should == 1599.99
         end
       end
+
+      context "with a numeric price" do
+        it "uses the price as is" do
+          I18n.locale = :de
+          variant.price = 1599.99
+          variant.price.should == 1599.99
+        end
+      end
     end
 
     context "cost_price=" do
@@ -232,6 +256,14 @@ describe Spree::Variant do
         it "captures the proper amount for a formatted price" do
           I18n.locale = :de
           variant.cost_price = '1.599,99'
+          variant.cost_price.should == 1599.99
+        end
+      end
+
+      context "with a numeric price" do
+        it "uses the price as is" do
+          I18n.locale = :de
+          variant.cost_price = 1599.99
           variant.cost_price.should == 1599.99
         end
       end

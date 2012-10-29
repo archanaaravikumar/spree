@@ -28,6 +28,7 @@ module Spree
       end
 
       def capture!
+        return true if completed?
         protect_from_connection_error do
           check_environment
 
@@ -47,6 +48,7 @@ module Spree
       end
 
       def void_transaction!
+        return true if void?
         protect_from_connection_error do
           check_environment
 
@@ -116,10 +118,11 @@ module Spree
       
       options.merge!({ :currency => payment_method.preferences[:currency_code] }) if payment_method && payment_method.preferences[:currency_code]
 
-      options.merge({ :billing_address  => order.bill_address.try(:active_merchant_hash),
+      options.merge!({ :billing_address  => order.bill_address.try(:active_merchant_hash),
                       :shipping_address => order.ship_address.try(:active_merchant_hash) })
 
       options.merge!(:discount => promo_total) if respond_to?(:promo_total)
+      options
     end
 
     private
