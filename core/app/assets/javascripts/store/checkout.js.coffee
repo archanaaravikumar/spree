@@ -4,7 +4,7 @@ disableSaveOnClick = ->
 
 $ ->
   if ($ '#checkout_form_address').is('*')
-    # ($ '#checkout_form_address').validate()
+    ($ '#checkout_form_address').validate()
     get_states = (region) ->
       country = ($ 'p#' + region + 'country' + ' span#' + region + 'country :only-child').val()
       state_mapper[country]
